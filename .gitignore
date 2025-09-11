@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+*.dat
+*.log
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.pt
+*.txt
+*.csv
+*.cache
+*.json
+*.html
+*.yaml
+*.csv
+*.zip
+
+
+# Virtualenv
+venv/
+ENV/
+
+# Data
+data/*
+
+# Misc
+.DS_Store
+*.swp
+*.bak
+*.tmp
+*.pyc
+*.exe
+*.bat
+*.ps1
+
+#
+data
+environment.yml
