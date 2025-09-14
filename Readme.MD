@@ -1,6 +1,6 @@
 # X-Ray Weld Defect Detection Pipeline Implementation:
 
-This Project is based on the SWRD Dataset.
+This project is based on the SWRD Dataset.
 
 Links:
 1) Paper: https://link.springer.com/article/10.1007/s10921-025-01186-w
