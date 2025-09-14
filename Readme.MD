@@ -1,5 +1,11 @@
 # X-Ray Weld Defect Detection Pipeline Implementation:
 
+This Project is based on the SWRD Dataset.
+
+Links:
+1) Paper: https://link.springer.com/article/10.1007/s10921-025-01186-w
+2) Dataset: http://www.tz-ndt.com/#/download
+
 # Step 1: Analyze dataset:
 
 Runs scripts/analyze.py with no arguments.
@@ -157,8 +163,8 @@ Contrast Stretching - outlined in
 Overlap: 50% (matching paper's approach to avoid boundary defects)
 Enhancement: CLAHE with clipLimit=2.0, tileGridSize=(8,8)
 
-Critical fix implemented: Image-level splitting BEFORE patching to prevent data leakage
-Paper alignment: Matches the sliding window approach, though paper used fixed 320x320
+Critical fix implemented: Image-level splitting BEFORE patching to prevent data leakage. Stratified Train, Validation, and Test Set Split
+Paper alignment: Matches the sliding window approach. The paper did not discuss stratifying images. Their results can be fully reproduced non-stratified. This suggests issues regarding the paper's original methodology. Patches from the same images cannot be shared with the validation and test sets. 
 
 3. Dataset Balancing (scripts/balance_dataset.py)
 
