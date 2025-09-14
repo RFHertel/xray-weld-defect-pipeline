@@ -5,43 +5,138 @@
 Runs scripts/analyze.py with no arguments.
 What it does: Loads JSON annotations, counts defects per class (porosity, inclusion, etc.), generates stats (e.g., totals, per-class distribution), saves to dataset_totals.json, and creates visualizations (e.g., bar charts of class imbalance)
 
-CMD line use: python analyze.py
+CMD line: python analyze.py
 
-# Step 2: Preprocess with sliding window and tracking
+# Step 2a: Preprocess with sliding window and tracking
 
 Runs scripts/preprocess_with_tracking.py with no arguments (defaults to train_val split).
 What it does: Applies sliding window, filters to 6 valid classes, enhances images (contrast stretch + CLAHE via OpenCV), balances defect/background patches, splits 9:1 train-val (or 8:1:1 with --split train_val_test), saves YOLO-format (images/labels, dataset.yaml).
 Reproduces SWRD: Patch-based preprocessing, min defect area 100, only 6 classes, enhancement for better detection.
 
-python scripts/preprocess_with_tracking.py
+Cmd line: python scripts/preprocess_with_tracking.py (old)
+Cmd line: python scripts/preprocess_with_tracking_overlap_fix (new where some annotations were not included in some images)
 
-# Step 3: Balance dataset
-Runs scripts/balance_dataset.py with --source and --output.
+# Step 2b: Preprocess Verification Visualization step:
+
+Run scripts/preprocess_with_tracking_viz_verify.py but need to alter the name inside the script of the image for now. This script allows you to visualize all the patches of an original .tif X-ray image. If this is not run following the earlier preprocessing step certain images may be missing annotations. We need to verify the earlier preprocessesing script is working. A 2 stage user interface will appear that allows you to flip through all the images and compare with the original long X-ray weld. In stage 2, on the keyboard, 'a' is move to next patch image, 'd' is move to last patch image, 'q' is to exit the user interface.
+
+Cmd line: python scripts/ppreprocess_with_tracking_viz_verify.py
+
+# Step 3a: Balance dataset
+Run scripts/balance_dataset.py with --source and --output.
 What it does: Balances classes via undersampling (e.g., porosity to ~5000), augmentation (undercut to ~2000 via rotate/flip/brightness via OpenCV), keeps others as-is or slightly augmented. Mixed strategy recommended.
 
 python scripts/balance_dataset.py --source processed_balanced --output processed_balanced_final --strategy mixed  
+scripts/balance_dataset_with_diversity.py --source processed_balanced --output processed_balanced_final --strategy mixed --seed 42
 
-# Step 4: Train model
+All your arguments are:
 
-Runs scripts/train_models_optimized.py with --data, --size, --epochs.
+--source processed_balanced: Points to your preprocessing output
+--output processed_balanced_final: Where the balanced dataset will go
+--strategy mixed: Uses the 75th percentile strategy (good balance between under/oversampling)
+--seed 42: For reproducibility
 
-or CMD line use: python scripts/train_models_optimized.py --data processed_balanced_final --size n --epochs 40
+Note on Augmentation strategy in mixed strategy when augmenting minority classes:
+
+Physics preserving augmentations:
+
+1. Porosity (43,237 patches - minimal augmentation needed):
+
+Can rotate/flip freely since gas bubbles are spherical
+Intensity changes simulate X-ray variations
+NO shape distortion (would make bubbles non-circular)
+
+2. Inclusion (6,733 patches - moderate augmentation):
+
+Can rotate since particles can be trapped at any angle
+Small position shifts OK
+NO scaling (preserve actual defect size)
+
+3. Crack (11,805 patches - moderate augmentation):
+
+Limited flipping only (cracks follow stress patterns)
+NO rotation (direction matters)
+NO blur (must preserve sharp edges)
+NO geometric distortion
+
+4. Undercut (1,106 patches - needs most augmentation):
+
+Horizontal flip OK (can occur on either side)
+Very minimal geometric changes (position-specific)
+Extra noise augmentation due to low sample count
+
+5. Lack of Fusion (5,609 patches):
+
+Horizontal flip only (can occur on either interface)
+NO rotation (follows weld geometry)
+NO vertical flip (gravity affects formation)
+
+6. Lack of Penetration (16,891 patches - minimal augmentation):
+
+Horizontal flip OK (extends along weld)
+NO rotation (always at centerline)
+NO vertical flip (always at root)
+
+# Step 3b: Check Balanced Dataset:
+Check the actual balance in processed_balanced_final
+
+CMD line:scripts/balanced_dataset_with_diversity_check_amounts.py WITH PROGRESS BAR
+
+# Step 3c: Check Balanced Dataset:
+Run scripts/analyze_and_undersample_porosity.py. Check to see if the script really made an even split of patches. If the instances in the patches are imbalanced either:
+reweight them in the training of the model or use the script to remove some of the class or classes that there are too many of. 
+
+CMD line: scripts/analyze_and_undersample_porosity.py
+
+# Step 3d: Script to check status and information about GPU
+Run scripts/check_gpus.py to check on GPU specific information and status
+
+CMD line: scripts/check_gpus.py
+
+# Step 4: Train model - The focus of the project was on working with YoloV8 but YoloV5 is a training option
+
+The following scripts are for a YoloV8:
+Run python scripts/train_models_balanced.py --model --epochs --batch --workers
+Run scripts/train_models_optimized.py with --data, --size, --epochs
+A few training scripts to run Yolov8 models. The last one is for running a custom pytorch coded v5 model with downloaded weights.
+
+Latest CMD line: python scripts/train_models_balanced.py --model n --epochs 100 --batch 64
+CMD line: python scripts/train_models_optimized.py --data processed_balanced_final --size n --epochs 40 (Older Version that worked with processed_balanced_final_underrep3classes)
+In Colab use: train_with_colab.py (although the script is old and needs updates - removal of a few augmentations - it can be easily modified with the same format and tried again)
+
+The following scripts is for a yoloV5. It's a pytorch implemented model (downloaded weights) and was made to run on an NVIDIA RTX 3060 with 12GB VRAM:
+
+Run python scripts/train_yolov5_working.py 
+
+It runs with the following arguments:
+
+    '--data', default='processed_balanced_final'
+    '--size', default='n', choices=['n', 's', 'm', 'l', 'x']
+    '--epochs', type=int, default=100
+    '--lr', type=float, default=0.01
+    '--batch-size'
 
 # Step 5: Evaluate model
-
-Runs scripts/evaluate_model.py with --weights and --split.
+Run scripts/evaluate_model.py with --weights and --split.
 What it does: Evaluates trained model on splits (train/val/test), computes mAP50/ mAP50-95, precision/recall, per-class AP, generates plots (training curves, per-class bars) via Plotly, saves JSON/HTML.
 
-CMD line use: python scripts/evaluate_model_enhanced.py --weights "models/yolov8n_20250908_225351/train/weights/best.pt" --split all
+CMD line: python scripts/evaluate_model_enhanced.py --weights "models/yolov8n_20250908_225351/train/weights/best.pt" --split all
 
 # Step 6: Run inference on full images
-Runs scripts/inference_full_image.py 
+
+Run scripts/inference_full_image_fixed.py 
+What it does: This script takes a YoloV8 model and runs inferences on all the patches of a fill .tif image and shows bounding boxes around all the weld defects discovered with classification weights. It allows a user to choose different NMS and confidence settings.
+Arguments:
+    '--model', default=r"C:\AWrk\SWRD_YOLO_Project\models\yolov8n_20250910_025458\train\weights\best.pt"
+    '--image', required=True
+    '--output', default=None
+    '--conf', type=float, default=0.25
+    '--nms', type=float, default=0.45
+    '--no-viz', action='store_true' 
 
 CMD line change directories in args and use: python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --output "C:\AWrk\SWRD_YOLO_Project\inference_results"
 
 or "python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220708-3.tif" --output "C:\AWrk\SWRD_YOLO_Project\inference_results""
-
-
 
 # Comprehensive Project Review: SWRD Xray-defect Implementation
 
@@ -58,6 +153,7 @@ Paper alignment: The paper mentions 6 classes, your analysis confirmed these plu
 Patch generation:
 
 Window size: Adaptive (min(h,w)//2, minimum 320px)
+Contrast Stretching - outlined in 
 Overlap: 50% (matching paper's approach to avoid boundary defects)
 Enhancement: CLAHE with clipLimit=2.0, tileGridSize=(8,8)
 
@@ -219,4 +315,6 @@ Undersampling discards data, potentially losing majority nuances
 
 When Better: For "really high" imbalances like our SWRD datasaet (>>10:1), where minority data is insufficient. 
 
-Which is Better Overall?: For really high imbalances like in SWRD (undercut much smaller than porosity), the mixed approach is better as a standalone method. It directly tackles data scarcity by adding diverse minority examples, which is critical when minority instances are <1k (as in our undercut). Weighted loss alone often insufficient for such extremes.
+Which is Better Overall?: For really high imbalances like in SWRD (undercut much smaller than porosity), the mixed approach is better as a standalone method. It directly tackles data scarcity by adding diverse minority examples, which is critical when minority instances are <1k (as in our undercut). Weighted loss alone often insufficient for such extremes. The option for weighted loss is also not available in YoloV8 for class specific work performed here. In training the final dataset had the following char
+
+This work's approach to preprocessing and tracking metrics for the dataset are found in Metrics and Preprocessing Results.txt

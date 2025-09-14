@@ -1,4 +1,47 @@
 # scripts/inference_full_image_fixed.py - ACTUALLY FIXED with Coloured Bounding Boxes for inference
+
+# # Basic usage with image
+# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif"
+
+# # Specify output directory
+# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --output "C:\AWrk\SWRD_YOLO_Project\inference_results"
+
+# # Adjust confidence threshold
+# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --conf 0.3 --nms 0.5
+
+# # Skip visualization (just save JSON results)
+# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --no-viz
+
+# How the Inference Pipeline Works:
+# 1. Sliding Window Approach:
+
+# Takes the full weld image and slides a 320x320 window (or adaptive size) across it
+# Uses 50% overlap between windows to ensure defects at boundaries aren't missed
+# Each window becomes a patch for processing
+
+# 2. Preprocessing Steps (matching training exactly):
+
+# Grayscale conversion: Ensures consistent single-channel input
+# Normalization: Stretches contrast to 0-255 range
+# CLAHE enhancement: Applies Contrast Limited Adaptive Histogram Equalization with clipLimit=2.0 and 8x8 tiles
+# BGR conversion: Converts to 3-channel for model (even though grayscale, model expects 3 channels)
+# Resize to 640x640: Model was trained on this size
+
+# 3. Detection & Post-processing:
+
+# Each patch runs through the model independently
+# Coordinates are scaled back from 640x640 to original patch size
+# Then translated to full image coordinates
+# NMS removes duplicate detections from overlapping windows
+
+# 4. Visualization:
+
+# Original image is enhanced with CLAHE for visibility
+# Converted to BGR to allow colored annotations
+# Each class gets a distinct color for its bounding boxes
+
+# This ensures the model sees exactly the same preprocessing it was trained with, while the visualization remains in color.
+
 import cv2
 import numpy as np
 from pathlib import Path
@@ -197,7 +240,10 @@ class SlidingWindowInference:
 def main():
     parser = argparse.ArgumentParser()
     #parser.add_argument('--model', default=r"C:\AWrk\SWRD_YOLO_Project\models\yolov8n_20250907_233859\train\weights\best.pt")
-    parser.add_argument('--model', default=r"C:\AWrk\SWRD_YOLO_Project\models\yolov8n_20250908_225351\train\weights\best.pt")
+    #best:
+    #parser.add_argument('--model', default=r"C:\AWrk\SWRD_YOLO_Project\models\yolov8n_20250908_225351\train\weights\best.pt")
+    #New:
+    parser.add_argument('--model', default=r"C:\AWrk\SWRD_YOLO_Project\models\yolov8n_20250910_025458\train\weights\best.pt")
     parser.add_argument('--image', required=True)
     parser.add_argument('--output', default=None)
     parser.add_argument('--conf', type=float, default=0.25)
@@ -246,44 +292,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-# # Basic usage with your image
-# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif"
-
-# # Specify output directory
-# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --output "C:\AWrk\SWRD_YOLO_Project\inference_results"
-
-# # Adjust confidence threshold
-# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --conf 0.3 --nms 0.5
-
-# # Skip visualization (just save JSON results)
-# python scripts/inference_full_image_fixed.py --image "C:\AWrk\SWRD_YOLO_Project\data\crop_weld_data\crop_weld_images\L\1\A_DJ-RT-20220623-17.tif" --no-viz
-
-# How the Inference Pipeline Works:
-# 1. Sliding Window Approach:
-
-# Takes the full weld image and slides a 320x320 window (or adaptive size) across it
-# Uses 50% overlap between windows to ensure defects at boundaries aren't missed
-# Each window becomes a patch for processing
-
-# 2. Preprocessing Steps (matching training exactly):
-
-# Grayscale conversion: Ensures consistent single-channel input
-# Normalization: Stretches contrast to 0-255 range
-# CLAHE enhancement: Applies Contrast Limited Adaptive Histogram Equalization with clipLimit=2.0 and 8x8 tiles
-# BGR conversion: Converts to 3-channel for model (even though grayscale, model expects 3 channels)
-# Resize to 640x640: Model was trained on this size
-
-# 3. Detection & Post-processing:
-
-# Each patch runs through the model independently
-# Coordinates are scaled back from 640x640 to original patch size
-# Then translated to full image coordinates
-# NMS removes duplicate detections from overlapping windows
-
-# 4. Visualization:
-
-# Original image is enhanced with CLAHE for visibility
-# Converted to BGR to allow colored annotations
-# Each class gets a distinct color for its bounding boxes
-
-# This ensures the model sees exactly the same preprocessing it was trained with, while the visualization remains in color.
