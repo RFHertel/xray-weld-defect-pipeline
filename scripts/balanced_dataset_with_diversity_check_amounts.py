@@ -7,7 +7,7 @@ from tqdm import tqdm
 def check_actual_balance():
     """Check the actual balance in processed_balanced_final"""
     
-    train_dir = Path(r'C:\AWrk\SWRD_YOLO_Project\processed_balanced_final\train')
+    train_dir = Path(r'C:\AWrk\SWRD_YOLO_Project\processed_balanced\train')
     labels_dir = train_dir / 'labels'
     
     # Get list of all label files first

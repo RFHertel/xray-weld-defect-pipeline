@@ -7,7 +7,7 @@ import json
 
 def analyze_patches():
     """Analyze which patches contain which defects"""
-    source_dir = Path(r'C:\AWrk\SWRD_YOLO_Project\processed_balanced_final\train')
+    source_dir = Path(r'C:\AWrk\SWRD_YOLO_Project\processed_balanced\train')
     labels_dir = source_dir / 'labels'
     
     patch_info = []
@@ -71,7 +71,7 @@ def analyze_patches():
 def undersample_porosity(df, target_reduction=0.5):
     """Remove porosity-only patches to balance dataset"""
     
-    source_dir = Path(r'C:\AWrk\SWRD_YOLO_Project\processed_balanced_final\train')
+    source_dir = Path(r'C:\AWrk\SWRD_YOLO_Project\processed_balanced\train')
     
     # Find porosity-only patches
     porosity_only = df[df['is_porosity_only'] == True].copy()

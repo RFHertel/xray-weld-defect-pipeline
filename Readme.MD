@@ -26,7 +26,7 @@ Cmd line: python scripts/preprocess_with_tracking_overlap_fix (new where some an
 
 Run scripts/preprocess_with_tracking_viz_verify.py but need to alter the name inside the script of the image for now. This script allows you to visualize all the patches of an original .tif X-ray image. If this is not run following the earlier preprocessing step certain images may be missing annotations. We need to verify the earlier preprocessesing script is working. A 2 stage user interface will appear that allows you to flip through all the images and compare with the original long X-ray weld. In stage 2, on the keyboard, 'a' is move to next patch image, 'd' is move to last patch image, 'q' is to exit the user interface.
 
-Cmd line: python scripts/ppreprocess_with_tracking_viz_verify.py
+Cmd line: python scripts/preprocess_with_tracking_viz_verify.py
 
 # Step 3a: Balance dataset
 Run scripts/balance_dataset.py with --source and --output.
@@ -80,6 +80,7 @@ NO vertical flip (gravity affects formation)
 6. Lack of Penetration (16,891 patches - minimal augmentation):
 
 Horizontal flip OK (extends along weld)
+
 NO rotation (always at centerline)
 NO vertical flip (always at root)
 
